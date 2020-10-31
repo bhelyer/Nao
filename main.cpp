@@ -3,7 +3,10 @@
  */
 #include <iostream>
 #include <stdexcept>
+#include <cstdlib>
+#include <ctime>
 #include "Nao/Game.h"
+#include "Nao/SimpleAI.h"
 
 namespace Nao {
 
@@ -15,6 +18,7 @@ void playGame();
 }
 
 int main() {
+    std::srand(std::time(nullptr)); // NOLINT(cert-msc51-cpp)
     try {
         Nao::playGame();
     } catch (const std::exception& e) {
@@ -31,20 +35,30 @@ void Nao::playGame() {
     // We start by creating a 3x3 board, initialising it to PlaceValue::None.
     const std::vector<PlaceValue> places(3*3, PlaceValue::None);
     Board board{3, 3, places};
-    auto player = PlaceValue::Nought;
+    auto currentPlayer = PlaceValue::Nought;
     auto result = GameResult::Incomplete;
 
+    const PlaceValue humanPlayer = (std::rand() % 2 == 0) ? PlaceValue::Nought : PlaceValue::Cross; // NOLINT(cert-msc50-cpp)
+    if (humanPlayer == PlaceValue::Nought) {
+        std::cout << "You're going first.\n";
+    } else {
+        std::cout << "You're going second.\n";
+    }
 
     while (result == GameResult::Incomplete) {
         board.print();
 
-        Point point{0, 0};
-        do {
-            point = askForPoint();
-        } while (!validatePlayerPoint(board, point));
+        if (currentPlayer == humanPlayer) {
+            Point point{0, 0};
+            do {
+                point = askForPoint();
+            } while (!validatePlayerPoint(board, point));
+            board = board.set(point, currentPlayer);
+        } else {
+            board = makeSimpleMove(board, currentPlayer);
+        }
 
-        board = board.set(point, player);
-        player = flip(player);
+        currentPlayer = flip(currentPlayer);
         result = evaluate(board);
     }
 
