@@ -1,6 +1,6 @@
 #include "MinimaxAI.h"
-#include <cassert>
 #include <vector>
+#include "Game.h"
 
 namespace Nao {
 
@@ -15,8 +15,8 @@ struct Move {
 [[nodiscard]] Score score(const Board& board, PlaceValue placeValue);
 // Score a given line. xDelta and yDelta are the value that is stepped from startPoint each time.
 [[nodiscard]] Score scoreLine(const Board& board, PlaceValue placeValue, Point startPoint, int xDelta, int yDelta);
-// Count the number of elements that are a given placeValue in a row for a given line.
-[[nodiscard]] int countLargestRun(const Board& board, PlaceValue placeValue, Point startPoint, int xDelta, int yDelta);
+// Count the number of elements that are a given placeValue for a given line.
+[[nodiscard]] int countPlaceValuesInLine(const Board& board, PlaceValue placeValue, Point startPoint, int xDelta, int yDelta);
 // Generate a list of open points.
 [[nodiscard]] std::vector<Point> getOpenPoints(const Board& board);
 // Run minimax to the given depth. me => the AI PlaceValue, placeValue => the PlaceValue to consider.
@@ -63,15 +63,20 @@ Nao::Score Nao::score(const Board& board, PlaceValue placeValue) {
     Score score = 0;
     for (int i = 0; i < board.tilesHigh; ++i) {
         score += scoreLine(board, placeValue, Point{0, i}, 1, 0);
+        score -= scoreLine(board, flip(placeValue), Point{0, i}, 1, 0);
         score += scoreLine(board, placeValue, Point{i, 0}, 0, 1);
+        score -= scoreLine(board, flip(placeValue), Point{i, 0}, 0, 1);
     }
     score += scoreLine(board, placeValue, Point{0, 0}, 1, 1);
+    score -= scoreLine(board, flip(placeValue), Point{0, 0}, 1, 1);
     score += scoreLine(board, placeValue, Point{board.tilesWide - 1, 0}, -1, 1);
+    score -= scoreLine(board, flip(placeValue), Point{board.tilesWide - 1, 0}, -1, 1);
+
     return score;
 }
 
 Nao::Score Nao::scoreLine(const Board& board, PlaceValue placeValue, Point startPoint, int xDelta, int yDelta) {
-    const int run = countLargestRun(board, placeValue, startPoint, xDelta, yDelta);
+    const int run = countPlaceValuesInLine(board, placeValue, startPoint, xDelta, yDelta);
     if (run == board.tilesWide) {
         return run * 100;
     } else if (run == board.tilesWide - 1) {
@@ -81,24 +86,15 @@ Nao::Score Nao::scoreLine(const Board& board, PlaceValue placeValue, Point start
     }
 }
 
-int Nao::countLargestRun(const Board& board, PlaceValue placeValue, Point startPoint, int xDelta, int yDelta) {
+int Nao::countPlaceValuesInLine(const Board& board, PlaceValue placeValue, Point startPoint, int xDelta, int yDelta) {
     Point point = startPoint;
-    const Point endPoint{point.x + xDelta * (board.tilesWide - 1), point.y + yDelta * (board.tilesHigh - 1)};
-
-    // Advance to the first matching placeValue.
-    while (point != endPoint && board.get(point) != placeValue) {
-        point.x += xDelta;
-        point.y += yDelta;
-    }
+    const Point endPoint{point.x + xDelta * board.tilesWide, point.y + yDelta * board.tilesHigh};
 
     int run = 0;
     while (point != endPoint) {
-    //while (point.x != endPoint.x || point.y != endPoint.y) {
         const PlaceValue positionValue = board.get(point);
         if (positionValue == placeValue) {
             ++run;
-        } else {
-            break;
         }
         point.x += xDelta;
         point.y += yDelta;
@@ -109,6 +105,12 @@ int Nao::countLargestRun(const Board& board, PlaceValue placeValue, Point startP
 
 std::vector<Nao::Point> Nao::getOpenPoints(const Board& board) {
     std::vector<Nao::Point> results;
+
+    const GameResult result = evaluate(board);
+    if (result == GameResult::CrossWins || result == GameResult::NoughtWins) {
+        // If someone has won, there are no valid moves.
+        return results;
+    }
 
     for (int y = 0; y < board.tilesHigh; ++y) {
         for (int x = 0; x < board.tilesWide; ++x) {
