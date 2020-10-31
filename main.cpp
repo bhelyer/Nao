@@ -6,7 +6,7 @@
 #include <cstdlib>
 #include <ctime>
 #include "Nao/Game.h"
-#include "Nao/SimpleAI.h"
+#include "Nao/MinimaxAI.h"
 
 namespace Nao {
 
@@ -55,7 +55,7 @@ void Nao::playGame() {
             } while (!validatePlayerPoint(board, point));
             board = board.set(point, currentPlayer);
         } else {
-            board = makeSimpleMove(board, currentPlayer);
+            board = makeComputerMove(board, currentPlayer);
         }
 
         currentPlayer = flip(currentPlayer);

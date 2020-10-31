@@ -17,3 +17,11 @@ int Nao::readInt() {
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     }
 }
+
+bool Nao::Point::operator==(const Point& other) const noexcept {
+    return x == other.x && y == other.y;
+}
+
+bool Nao::Point::operator!=(const Point& other) const noexcept {
+    return x != other.x || y != other.y;
+}

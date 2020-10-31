@@ -60,7 +60,7 @@ Nao::GameResult Nao::checkRun(const Board& board, Point startPoint, int xDelta, 
 
     const Point endPoint{startPoint.x + xDelta * (board.tilesWide - 1), startPoint.y + yDelta * (board.tilesHigh - 1)};
     Point point = startPoint;
-    while (point.x != endPoint.x || point.y != endPoint.y) {
+    while (point != endPoint) {
         point = Point{point.x + xDelta, point.y + yDelta};
         if (board.get(point) != place) {
             return Nao::GameResult::Incomplete;
